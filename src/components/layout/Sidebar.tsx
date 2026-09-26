@@ -8,9 +8,10 @@ import {
   FileText,
   Building2,
   X,
+  ClipboardList,
 } from 'lucide-react';
 
-export type NavigationTab = 'dashboard' | 'equipment' | 'employees' | 'alerts' | 'documents';
+export type NavigationTab = 'dashboard' | 'equipment' | 'employees' | 'alerts' | 'documents' | 'work-orders';
 
 interface SidebarProps {
   currentTab: NavigationTab;
@@ -44,6 +45,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
       id: 'employees',
       label: t('nav_employees'),
       icon: Users,
+    },
+    {
+      id: 'work-orders',
+      label: 'Bons de Travail',
+      icon: ClipboardList,
     },
     {
       id: 'alerts',

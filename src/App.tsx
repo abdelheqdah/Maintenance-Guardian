@@ -7,6 +7,7 @@ import {
   CalibrationRecord,
   DocumentRecord,
   ComplianceStatus,
+  WorkOrder,
 } from './types';
 import {
   equipmentService,
@@ -14,6 +15,7 @@ import {
   maintenanceService,
   calibrationService,
   documentService,
+  workOrderService,
 } from './services';
 import { calculateComplianceStatus } from './utils/dateUtils';
 import { useLanguage } from './i18n';
@@ -31,6 +33,8 @@ import { EmployeeFormModal } from './components/employees/EmployeeFormModal';
 import { AlertsView } from './components/alerts/AlertsView';
 import { DocumentsView } from './components/documents/DocumentsView';
 import { DocumentModal } from './components/documents/DocumentModal';
+import { WorkOrdersView } from './components/workOrders/WorkOrdersView';
+import { WorkOrderFormModal } from './components/workOrders/WorkOrderFormModal';
 import { ConfirmModal } from './components/common/ConfirmModal';
 import { ToastContainer, ToastMessage, ToastType } from './components/common/Toast';
 
@@ -51,6 +55,7 @@ export const App: React.FC = () => {
   const [maintenanceList, setMaintenanceList] = useState<MaintenanceRecord[]>([]);
   const [calibrationList, setCalibrationList] = useState<CalibrationRecord[]>([]);
   const [documentList, setDocumentList] = useState<DocumentRecord[]>([]);
+  const [workOrderList, setWorkOrderList] = useState<WorkOrder[]>([]);
 
   // Modals state
   const [isEquipmentModalOpen, setIsEquipmentModalOpen] = useState(false);
@@ -75,6 +80,9 @@ export const App: React.FC = () => {
     associatedId: '',
     associatedName: '',
   });
+
+  const [isWorkOrderModalOpen, setIsWorkOrderModalOpen] = useState(false);
+  const [editingWorkOrder, setEditingWorkOrder] = useState<WorkOrder | null>(null);
 
   // Confirm Modal state
   const [confirmModal, setConfirmModal] = useState<{
@@ -108,6 +116,7 @@ export const App: React.FC = () => {
     setMaintenanceList(maintenanceService.getAll());
     setCalibrationList(calibrationService.getAll());
     setDocumentList(documentService.getAll());
+    setWorkOrderList(workOrderService.getWorkOrders());
   }, []);
 
   useEffect(() => {
@@ -433,6 +442,20 @@ export const App: React.FC = () => {
     setIsDocumentModalOpen(false);
   };
 
+  // Handlers - WorkOrder CRUD
+  const handleSaveWorkOrder = (data: Omit<WorkOrder, 'id' | 'createdAt' | 'updatedAt'>) => {
+    if (editingWorkOrder) {
+      workOrderService.update(editingWorkOrder.id, data);
+      addToast(t('toast_updated'));
+    } else {
+      workOrderService.create(data);
+      addToast(t('toast_created'));
+    }
+    refreshData();
+    setIsWorkOrderModalOpen(false);
+    setEditingWorkOrder(null);
+  };
+
   const handleDeleteDocumentPrompt = (doc: DocumentRecord) => {
     setConfirmModal({
       isOpen: true,
@@ -582,6 +605,23 @@ export const App: React.FC = () => {
               onNavigateItem={handleNavigateItem}
             />
           )}
+
+          {/* 7. Work Orders View */}
+          {currentTab === 'work-orders' && (
+            <WorkOrdersView
+              workOrders={workOrderList}
+              equipmentList={equipmentList}
+              employeeList={employeeList}
+              onAddWorkOrder={() => {
+                setEditingWorkOrder(null);
+                setIsWorkOrderModalOpen(true);
+              }}
+              onEditWorkOrder={(wo) => {
+                setEditingWorkOrder(wo);
+                setIsWorkOrderModalOpen(true);
+              }}
+            />
+          )}
         </>
       )}
 
@@ -597,6 +637,20 @@ export const App: React.FC = () => {
         }}
         onSave={handleSaveEquipment}
       />
+
+      {/* Work Orders */}
+      <WorkOrderFormModal
+        isOpen={isWorkOrderModalOpen}
+        workOrder={editingWorkOrder}
+        equipmentList={equipmentList}
+        employeeList={employeeList}
+        onClose={() => {
+          setIsWorkOrderModalOpen(false);
+          setEditingWorkOrder(null);
+        }}
+        onSave={handleSaveWorkOrder}
+      />
+
 
       {/* Employee Add/Edit */}
       <EmployeeFormModal

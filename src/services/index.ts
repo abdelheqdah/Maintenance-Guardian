@@ -5,3 +5,4 @@ export * from './employeeService';
 export * from './maintenanceService';
 export * from './calibrationService';
 export * from './documentService';
+export * from './workOrderService';
