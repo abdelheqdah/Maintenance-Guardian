@@ -1,98 +1,48 @@
-import { Employee, ComplianceStatus } from '../types';
-import { storage, DEFAULT_COMPANY_ID } from './storage';
+import { Employee } from '../types';
+import { db } from '../config/firebase';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, updateDoc, query, where } from 'firebase/firestore';
 import { generateId } from '../utils/idGenerator';
-import { calculateComplianceStatus } from '../utils/dateUtils';
-import { equipmentService } from './equipmentService';
+import { DEFAULT_COMPANY_ID } from './storage';
 
-const STORAGE_KEY = 'employees';
+const COLLECTION = 'employees';
 
 export const employeeService = {
-  getAll(companyId: string = DEFAULT_COMPANY_ID): Employee[] {
-    equipmentService.ensureInitialized();
-    const all = storage.get<Employee[]>(STORAGE_KEY, []);
-    return all.filter((emp) => emp.companyId === companyId);
+  async getAll(companyId: string = DEFAULT_COMPANY_ID): Promise<Employee[]> {
+    const q = query(collection(db, COLLECTION), where("companyId", "==", companyId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as Employee);
   },
 
-  getById(id: string): Employee | undefined {
-    equipmentService.ensureInitialized();
-    const all = storage.get<Employee[]>(STORAGE_KEY, []);
-    return all.find((emp) => emp.id === id);
+  async getById(id: string): Promise<Employee | undefined> {
+    const d = await getDoc(doc(db, COLLECTION, id));
+    return d.exists() ? (d.data() as Employee) : undefined;
   },
 
-  create(data: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>): Employee {
-    equipmentService.ensureInitialized();
-    const all = storage.get<Employee[]>(STORAGE_KEY, []);
+  async create(data: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>): Promise<Employee> {
+    const id = generateId('emp');
     const now = new Date().toISOString();
-    const newEmployee: Employee = {
+    const newItem = {
       ...data,
-      id: generateId('emp'),
+      id,
       companyId: data.companyId || DEFAULT_COMPANY_ID,
       createdAt: now,
       updatedAt: now,
-    };
-    all.unshift(newEmployee);
-    storage.set(STORAGE_KEY, all);
-    return newEmployee;
+    } as unknown as Employee;
+    
+    await setDoc(doc(db, COLLECTION, id), newItem as any);
+    return newItem;
   },
 
-  update(id: string, updates: Partial<Employee>): Employee {
-    equipmentService.ensureInitialized();
-    const all = storage.get<Employee[]>(STORAGE_KEY, []);
-    const index = all.findIndex((emp) => emp.id === id);
-    if (index === -1) {
-      throw new Error(`Employee with ID ${id} not found`);
-    }
-
-    const updated: Employee = {
-      ...all[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    all[index] = updated;
-    storage.set(STORAGE_KEY, all);
-    return updated;
+  async update(id: string, updates: Partial<Employee>): Promise<Employee> {
+    const now = new Date().toISOString();
+    const ref = doc(db, COLLECTION, id);
+    await updateDoc(ref, { ...updates, updatedAt: now });
+    const d = await getDoc(ref);
+    return d.data() as Employee;
   },
 
-  delete(id: string): boolean {
-    equipmentService.ensureInitialized();
-    const all = storage.get<Employee[]>(STORAGE_KEY, []);
-    const filtered = all.filter((emp) => emp.id !== id);
-    if (filtered.length !== all.length) {
-      storage.set(STORAGE_KEY, filtered);
-      return true;
-    }
-    return false;
-  },
-
-  search(
-    query: string = '',
-    statusFilter: ComplianceStatus | 'ALL' = 'ALL',
-    companyId: string = DEFAULT_COMPANY_ID
-  ): Employee[] {
-    const list = this.getAll(companyId);
-    const q = query.toLowerCase().trim();
-
-    return list.filter((emp) => {
-      // 1. Search text
-      const matchesText = !q || (
-        emp.name.toLowerCase().includes(q) ||
-        emp.employeeId.toLowerCase().includes(q) ||
-        emp.position.toLowerCase().includes(q) ||
-        emp.certificateName.toLowerCase().includes(q) ||
-        emp.certificateNumber.toLowerCase().includes(q) ||
-        (emp.department && emp.department.toLowerCase().includes(q))
-      );
-
-      if (!matchesText) return false;
-
-      // 2. Status filter
-      if (statusFilter !== 'ALL') {
-        const certStatus = calculateComplianceStatus(emp.expiryDate).status;
-        if (certStatus !== statusFilter) return false;
-      }
-
-      return true;
-    });
-  },
+  async delete(id: string): Promise<boolean> {
+    await deleteDoc(doc(db, COLLECTION, id));
+    return true;
+  }
 };

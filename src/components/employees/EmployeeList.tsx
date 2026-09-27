@@ -66,7 +66,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
   const handleExportCSV = () => {
     const headers = [
       t('col_employee'),
-      t('col_id'),
+      'ID',
       t('col_position'),
       'Département',
       'Certificat/Habilitation',
@@ -83,7 +83,7 @@ export const EmployeeList: React.FC<EmployeeListProps> = ({
       emp.department || '',
       emp.certificateName,
       emp.certificateNumber,
-      emp.issuingAuthority,
+      '', // No issuingAuthority on Employee
       emp.issueDate ? formatDate(emp.issueDate, language) : '',
       formatDate(emp.expiryDate, language),
     ]);

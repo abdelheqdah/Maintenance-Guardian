@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { WorkOrder, Equipment, Employee } from '../../types';
-import { useLanguage } from '../../i18n';
 import { X, Check } from 'lucide-react';
 
 interface WorkOrderFormModalProps {
@@ -20,12 +19,11 @@ export const WorkOrderFormModal: React.FC<WorkOrderFormModalProps> = ({
   onClose,
   onSave,
 }) => {
-  const { t } = useLanguage();
-  
   const [formData, setFormData] = useState<Omit<WorkOrder, 'id' | 'createdAt' | 'updatedAt'>>({
     title: '',
     description: '',
     equipmentId: '',
+    type: 'PREVENTIVE',
     assignedToId: '',
     priority: 'MEDIUM',
     status: 'OPEN',
@@ -43,6 +41,7 @@ export const WorkOrderFormModal: React.FC<WorkOrderFormModalProps> = ({
         title: workOrder.title,
         description: workOrder.description,
         equipmentId: workOrder.equipmentId || '',
+        type: workOrder.type,
         assignedToId: workOrder.assignedToId || '',
         priority: workOrder.priority,
         status: workOrder.status,
@@ -58,6 +57,7 @@ export const WorkOrderFormModal: React.FC<WorkOrderFormModalProps> = ({
         title: '',
         description: '',
         equipmentId: '',
+        type: 'PREVENTIVE',
         assignedToId: '',
         priority: 'MEDIUM',
         status: 'OPEN',
@@ -220,7 +220,7 @@ export const WorkOrderFormModal: React.FC<WorkOrderFormModalProps> = ({
             onClick={onClose}
             className="px-4 py-2.5 text-sm font-medium text-slate-600 bg-white border border-slate-200 hover:bg-slate-50 hover:text-slate-900 rounded-xl transition-colors"
           >
-            {t('cancel')}
+            {'Annuler'}
           </button>
           <button
             type="button"
@@ -228,7 +228,7 @@ export const WorkOrderFormModal: React.FC<WorkOrderFormModalProps> = ({
             className="inline-flex items-center gap-2 px-4 py-2.5 text-sm font-semibold text-white bg-blue-600 hover:bg-blue-700 rounded-xl shadow-xs transition-colors"
           >
             <Check className="w-4 h-4" />
-            {t('save')}
+            {'Enregistrer'}
           </button>
         </div>
       </div>

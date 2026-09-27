@@ -1,45 +1,48 @@
-import { WorkOrder } from '../types/workOrder';
+import { WorkOrder } from '../types';
+import { db } from '../config/firebase';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, updateDoc, query, where } from 'firebase/firestore';
 import { generateId } from '../utils/idGenerator';
+import { DEFAULT_COMPANY_ID } from './storage';
 
-const STORAGE_KEY = 'mg_work_orders';
+const COLLECTION = 'workOrders';
 
-export const getWorkOrders = (): WorkOrder[] => {
-  const data = localStorage.getItem(STORAGE_KEY);
-  return data ? JSON.parse(data) : [];
-};
+export const workOrderService = {
+  async getWorkOrders(companyId: string = DEFAULT_COMPANY_ID): Promise<WorkOrder[]> {
+    const q = query(collection(db, COLLECTION), where("companyId", "==", companyId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as WorkOrder);
+  },
 
-export const saveWorkOrders = (workOrders: WorkOrder[]): void => {
-  localStorage.setItem(STORAGE_KEY, JSON.stringify(workOrders));
-};
+  async getById(id: string): Promise<WorkOrder | undefined> {
+    const d = await getDoc(doc(db, COLLECTION, id));
+    return d.exists() ? (d.data() as WorkOrder) : undefined;
+  },
 
-export const addWorkOrder = (workOrder: Omit<WorkOrder, 'id' | 'createdAt'>): WorkOrder => {
-  const workOrders = getWorkOrders();
-  const newWorkOrder: WorkOrder = {
-    ...workOrder,
-    id: generateId('wo'),
-    createdAt: new Date().toISOString(),
-  };
-  
-  saveWorkOrders([...workOrders, newWorkOrder]);
-  return newWorkOrder;
-};
+  async create(data: Omit<WorkOrder, 'id' | 'createdAt' | 'updatedAt'>): Promise<WorkOrder> {
+    const id = generateId('wo');
+    const now = new Date().toISOString();
+    const newItem = {
+      ...data,
+      id,
+      
+      createdAt: now,
+      updatedAt: now,
+    } as unknown as WorkOrder;
+    
+    await setDoc(doc(db, COLLECTION, id), newItem as any);
+    return newItem;
+  },
 
-export const updateWorkOrder = (id: string, updates: Partial<WorkOrder>): WorkOrder => {
-  const workOrders = getWorkOrders();
-  const index = workOrders.findIndex(wo => wo.id === id);
-  
-  if (index === -1) {
-    throw new Error('Work order not found');
+  async update(id: string, updates: Partial<WorkOrder>): Promise<WorkOrder> {
+    const now = new Date().toISOString();
+    const ref = doc(db, COLLECTION, id);
+    await updateDoc(ref, { ...updates, updatedAt: now });
+    const d = await getDoc(ref);
+    return d.data() as WorkOrder;
+  },
+
+  async delete(id: string): Promise<boolean> {
+    await deleteDoc(doc(db, COLLECTION, id));
+    return true;
   }
-  
-  const updatedWorkOrder = { ...workOrders[index], ...updates };
-  workOrders[index] = updatedWorkOrder;
-  
-  saveWorkOrders(workOrders);
-  return updatedWorkOrder;
-};
-
-export const deleteWorkOrder = (id: string): void => {
-  const workOrders = getWorkOrders();
-  saveWorkOrders(workOrders.filter(wo => wo.id !== id));
 };

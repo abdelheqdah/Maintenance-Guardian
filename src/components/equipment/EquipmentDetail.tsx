@@ -464,7 +464,7 @@ export const EquipmentDetail: React.FC<EquipmentDetailProps> = ({
                           {item.type}
                         </h4>
                         <p className="text-xs text-slate-500 font-mono mt-0.5">
-                          {formatDate(item.date, language)} • Par {item._historyType === 'CALIBRATION' ? (item as CalibrationRecord).inspectionOrganization : (item as MaintenanceRecord).technician}
+                          {formatDate(item.date, language)} • Par {item._historyType === 'CALIBRATION' ? (item as CalibrationRecord).performedBy : (item as MaintenanceRecord).technician}
                         </p>
                       </div>
                       {item._historyType === 'CALIBRATION' && (

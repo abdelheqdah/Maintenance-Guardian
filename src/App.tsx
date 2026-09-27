@@ -110,17 +110,26 @@ export const App: React.FC = () => {
   };
 
   // Reload data from services
-  const refreshData = useCallback(() => {
-    setEquipmentList(equipmentService.getAll());
-    setEmployeeList(employeeService.getAll());
-    setMaintenanceList(maintenanceService.getAll());
-    setCalibrationList(calibrationService.getAll());
-    setDocumentList(documentService.getAll());
-    setWorkOrderList(workOrderService.getWorkOrders());
+  const refreshData = useCallback(async () => {
+    try {
+      const eq = await equipmentService.getAll();
+      const emp = await employeeService.getAll();
+      const maint = await maintenanceService.getAll();
+      const cal = await calibrationService.getAll();
+      const doc = await documentService.getAll();
+      const wo = await workOrderService.getWorkOrders();
+      setEquipmentList(eq);
+      setEmployeeList(emp);
+      setMaintenanceList(maint);
+      setCalibrationList(cal);
+      setDocumentList(doc);
+      setWorkOrderList(wo);
+    } catch (err) {
+      console.error("Error fetching from Firebase:", err);
+    }
   }, []);
 
   useEffect(() => {
-    equipmentService.ensureInitialized();
     refreshData();
   }, [refreshData]);
 
@@ -320,12 +329,12 @@ export const App: React.FC = () => {
   };
 
   // Handlers - Equipment CRUD
-  const handleSaveEquipment = (data: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveEquipment = async (data: Omit<Equipment, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingEquipment) {
-      equipmentService.update(editingEquipment.id, data);
+      await equipmentService.update(editingEquipment.id, data);
       addToast(t('toast_updated'));
     } else {
-      equipmentService.create(data);
+      await equipmentService.create(data);
       addToast(t('toast_created'));
     }
     refreshData();
@@ -338,8 +347,8 @@ export const App: React.FC = () => {
       isOpen: true,
       title: t('confirm_delete_title'),
       message: t('confirm_delete_equipment_msg', { name: equipment.name }),
-      onConfirm: () => {
-        equipmentService.delete(equipment.id);
+      onConfirm: async () => {
+        await equipmentService.delete(equipment.id);
         refreshData();
         addToast(t('toast_deleted'));
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
@@ -351,12 +360,12 @@ export const App: React.FC = () => {
   };
 
   // Handlers - Employee CRUD
-  const handleSaveEmployee = (data: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveEmployee = async (data: Omit<Employee, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingEmployee) {
-      employeeService.update(editingEmployee.id, data);
+      await employeeService.update(editingEmployee.id, data);
       addToast(t('toast_updated'));
     } else {
-      employeeService.create(data);
+      await employeeService.create(data);
       addToast(t('toast_created'));
     }
     refreshData();
@@ -369,8 +378,8 @@ export const App: React.FC = () => {
       isOpen: true,
       title: t('confirm_delete_title'),
       message: t('confirm_delete_employee_msg', { name: emp.name }),
-      onConfirm: () => {
-        employeeService.delete(emp.id);
+      onConfirm: async () => {
+        await employeeService.delete(emp.id);
         refreshData();
         addToast(t('toast_deleted'));
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
@@ -379,12 +388,12 @@ export const App: React.FC = () => {
   };
 
   // Handlers - Calibration CRUD
-  const handleSaveCalibration = (data: Omit<CalibrationRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveCalibration = async (data: Omit<CalibrationRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingCalibration) {
-      calibrationService.update(editingCalibration.id, data);
+      await calibrationService.update(editingCalibration.id, data);
       addToast(t('toast_updated'));
     } else {
-      calibrationService.create(data);
+      await calibrationService.create(data);
       addToast(t('toast_created'));
     }
     refreshData();
@@ -397,8 +406,8 @@ export const App: React.FC = () => {
       isOpen: true,
       title: t('confirm_delete_title'),
       message: t('confirm_delete_record_msg'),
-      onConfirm: () => {
-        calibrationService.delete(cal.id);
+      onConfirm: async () => {
+        await calibrationService.delete(cal.id);
         refreshData();
         addToast(t('toast_deleted'));
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
@@ -407,12 +416,12 @@ export const App: React.FC = () => {
   };
 
   // Handlers - Maintenance CRUD
-  const handleSaveMaintenance = (data: Omit<MaintenanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveMaintenance = async (data: Omit<MaintenanceRecord, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingMaintenance) {
-      maintenanceService.update(editingMaintenance.id, data);
+      await maintenanceService.update(editingMaintenance.id, data);
       addToast(t('toast_updated'));
     } else {
-      maintenanceService.create(data);
+      await maintenanceService.create(data);
       addToast(t('toast_created'));
     }
     refreshData();
@@ -425,8 +434,8 @@ export const App: React.FC = () => {
       isOpen: true,
       title: t('confirm_delete_title'),
       message: t('confirm_delete_record_msg'),
-      onConfirm: () => {
-        maintenanceService.delete(maint.id);
+      onConfirm: async () => {
+        await maintenanceService.delete(maint.id);
         refreshData();
         addToast(t('toast_deleted'));
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
@@ -435,20 +444,20 @@ export const App: React.FC = () => {
   };
 
   // Handlers - Document CRUD
-  const handleSaveDocument = (data: Omit<DocumentRecord, 'id' | 'createdAt'>) => {
-    documentService.create(data);
+  const handleSaveDocument = async (data: Omit<DocumentRecord, 'id' | 'createdAt'>) => {
+    await documentService.create(data);
     refreshData();
     addToast(t('toast_created'));
     setIsDocumentModalOpen(false);
   };
 
   // Handlers - WorkOrder CRUD
-  const handleSaveWorkOrder = (data: Omit<WorkOrder, 'id' | 'createdAt' | 'updatedAt'>) => {
+  const handleSaveWorkOrder = async (data: Omit<WorkOrder, 'id' | 'createdAt' | 'updatedAt'>) => {
     if (editingWorkOrder) {
-      workOrderService.update(editingWorkOrder.id, data);
+      await workOrderService.update(editingWorkOrder.id, data);
       addToast(t('toast_updated'));
     } else {
-      workOrderService.create(data);
+      await workOrderService.create(data);
       addToast(t('toast_created'));
     }
     refreshData();
@@ -461,8 +470,8 @@ export const App: React.FC = () => {
       isOpen: true,
       title: t('confirm_delete_title'),
       message: t('confirm_delete_record_msg'),
-      onConfirm: () => {
-        documentService.delete(doc.id);
+      onConfirm: async () => {
+        await documentService.delete(doc.id);
         refreshData();
         addToast(t('toast_deleted'));
         setConfirmModal((prev) => ({ ...prev, isOpen: false }));
@@ -611,7 +620,7 @@ export const App: React.FC = () => {
             <WorkOrdersView
               workOrders={workOrderList}
               equipmentList={equipmentList}
-              employeeList={employeeList}
+              
               onAddWorkOrder={() => {
                 setEditingWorkOrder(null);
                 setIsWorkOrderModalOpen(true);
@@ -641,9 +650,10 @@ export const App: React.FC = () => {
       {/* Work Orders */}
       <WorkOrderFormModal
         isOpen={isWorkOrderModalOpen}
+        employeeList={employeeList}
         workOrder={editingWorkOrder}
         equipmentList={equipmentList}
-        employeeList={employeeList}
+        
         onClose={() => {
           setIsWorkOrderModalOpen(false);
           setEditingWorkOrder(null);

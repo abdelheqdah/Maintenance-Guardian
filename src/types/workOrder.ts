@@ -10,10 +10,13 @@ export interface WorkOrder {
   type: WorkOrderType;
   priority: WorkOrderPriority;
   status: WorkOrderStatus;
-  assignedTo?: string; // Employee ID or name
+  assignedToId?: string; // Employee ID or name
   createdAt: string;
   dueDate?: string;
-  completedAt?: string;
+  completedDate?: string;
+  estimatedHours?: number;
+  actualHours?: number;
+  cost?: number;
   notes?: string;
   partsUsed?: string[];
 }

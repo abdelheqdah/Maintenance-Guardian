@@ -1,15 +1,15 @@
 import React, { useState } from 'react';
-import { WorkOrder, Equipment, Employee } from '../../types';
+import { WorkOrder, Equipment,  } from '../../types';
 import { useLanguage } from '../../i18n';
-import { ClipboardList, Plus, Search, Filter } from 'lucide-react';
+import { ClipboardList, Plus, Search,  } from 'lucide-react';
 import { formatDate } from '../../utils/dateUtils';
-import { StatusBadge } from '../common/StatusBadge';
+
 import { EmptyState } from '../common/EmptyState';
 
 interface WorkOrdersViewProps {
   workOrders: WorkOrder[];
   equipmentList: Equipment[];
-  employeeList: Employee[];
+  
   onAddWorkOrder: () => void;
   onEditWorkOrder: (wo: WorkOrder) => void;
 }
@@ -17,11 +17,11 @@ interface WorkOrdersViewProps {
 export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
   workOrders,
   equipmentList,
-  employeeList,
+  
   onAddWorkOrder,
   onEditWorkOrder,
 }) => {
-  const { t, language } = useLanguage();
+  const { language } = useLanguage();
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<string>('ALL');
 
@@ -96,7 +96,7 @@ export const WorkOrdersView: React.FC<WorkOrdersViewProps> = ({
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
           <input
             type="text"
-            placeholder={t('search_placeholder')}
+            placeholder={'Rechercher...'}
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full pl-10 pr-4 py-2.5 bg-white border border-slate-300 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"

@@ -1,97 +1,48 @@
 import { CalibrationRecord } from '../types';
-import { storage, DEFAULT_COMPANY_ID } from './storage';
+import { db } from '../config/firebase';
+import { collection, doc, getDocs, getDoc, setDoc, deleteDoc, updateDoc, query, where } from 'firebase/firestore';
 import { generateId } from '../utils/idGenerator';
-import { equipmentService } from './equipmentService';
+import { DEFAULT_COMPANY_ID } from './storage';
 
-const STORAGE_KEY = 'calibrations';
+const COLLECTION = 'calibrations';
 
 export const calibrationService = {
-  getAll(companyId: string = DEFAULT_COMPANY_ID): CalibrationRecord[] {
-    equipmentService.ensureInitialized();
-    const all = storage.get<CalibrationRecord[]>(STORAGE_KEY, []);
-    return all
-      .filter((r) => r.companyId === companyId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  async getAll(companyId: string = DEFAULT_COMPANY_ID): Promise<CalibrationRecord[]> {
+    const q = query(collection(db, COLLECTION), where("companyId", "==", companyId));
+    const snapshot = await getDocs(q);
+    return snapshot.docs.map(doc => doc.data() as CalibrationRecord);
   },
 
-  getByEquipmentId(equipmentId: string): CalibrationRecord[] {
-    return this.getAll().filter((c) => c.equipmentId === equipmentId);
+  async getById(id: string): Promise<CalibrationRecord | undefined> {
+    const d = await getDoc(doc(db, COLLECTION, id));
+    return d.exists() ? (d.data() as CalibrationRecord) : undefined;
   },
 
-  getById(id: string): CalibrationRecord | undefined {
-    equipmentService.ensureInitialized();
-    const all = storage.get<CalibrationRecord[]>(STORAGE_KEY, []);
-    return all.find((r) => r.id === id);
-  },
-
-  create(data: Omit<CalibrationRecord, 'id' | 'createdAt' | 'updatedAt'>): CalibrationRecord {
-    equipmentService.ensureInitialized();
-    const all = storage.get<CalibrationRecord[]>(STORAGE_KEY, []);
+  async create(data: Omit<CalibrationRecord, 'id' | 'createdAt' | 'updatedAt'>): Promise<CalibrationRecord> {
+    const id = generateId('cal');
     const now = new Date().toISOString();
-    const newRecord: CalibrationRecord = {
+    const newItem = {
       ...data,
-      id: generateId('cal'),
+      id,
       companyId: data.companyId || DEFAULT_COMPANY_ID,
       createdAt: now,
       updatedAt: now,
-    };
-    all.unshift(newRecord);
-    storage.set(STORAGE_KEY, all);
-
-    // Sync with Equipment record
-    try {
-      equipmentService.update(data.equipmentId, {
-        lastCalibrationDate: data.date,
-        nextCalibrationDate: data.nextDueDate,
-        ...(data.performedBy ? { inspectionOrganization: data.performedBy } : {}),
-      });
-    } catch (err) {
-      console.warn('Could not sync equipment calibration dates:', err);
-    }
-
-    return newRecord;
+    } as unknown as CalibrationRecord;
+    
+    await setDoc(doc(db, COLLECTION, id), newItem as any);
+    return newItem;
   },
 
-  update(id: string, updates: Partial<CalibrationRecord>): CalibrationRecord {
-    equipmentService.ensureInitialized();
-    const all = storage.get<CalibrationRecord[]>(STORAGE_KEY, []);
-    const index = all.findIndex((r) => r.id === id);
-    if (index === -1) {
-      throw new Error(`Calibration record ${id} not found`);
-    }
-
-    const updated: CalibrationRecord = {
-      ...all[index],
-      ...updates,
-      updatedAt: new Date().toISOString(),
-    };
-
-    all[index] = updated;
-    storage.set(STORAGE_KEY, all);
-
-    // If dates changed, sync equipment
-    if (updates.date || updates.nextDueDate) {
-      try {
-        equipmentService.update(updated.equipmentId, {
-          ...(updates.date ? { lastCalibrationDate: updates.date } : {}),
-          ...(updates.nextDueDate ? { nextCalibrationDate: updates.nextDueDate } : {}),
-        });
-      } catch (err) {
-        console.warn('Could not sync equipment calibration dates:', err);
-      }
-    }
-
-    return updated;
+  async update(id: string, updates: Partial<CalibrationRecord>): Promise<CalibrationRecord> {
+    const now = new Date().toISOString();
+    const ref = doc(db, COLLECTION, id);
+    await updateDoc(ref, { ...updates, updatedAt: now });
+    const d = await getDoc(ref);
+    return d.data() as CalibrationRecord;
   },
 
-  delete(id: string): boolean {
-    equipmentService.ensureInitialized();
-    const all = storage.get<CalibrationRecord[]>(STORAGE_KEY, []);
-    const filtered = all.filter((r) => r.id !== id);
-    if (filtered.length !== all.length) {
-      storage.set(STORAGE_KEY, filtered);
-      return true;
-    }
-    return false;
-  },
+  async delete(id: string): Promise<boolean> {
+    await deleteDoc(doc(db, COLLECTION, id));
+    return true;
+  }
 };
